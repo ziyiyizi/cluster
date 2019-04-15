@@ -9,12 +9,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import time
+import csv
 
 class myCluster:
     def __init__(self):
         
         self.xy = np.loadtxt('Aggregation.txt', delimiter=',') #读入点集合
-        #self.gen_dist(self.xy) #生成距离矩阵 第一次运行时执行
+        self.gen_dist(self.xy) #生成距离矩阵 第一次运行时执行
         self.dij = np.loadtxt('dist.txt', delimiter=' ') #读入距离矩阵
         self.dij_sort = np.loadtxt('dist_sort.txt') #读入排好序的距离数组
         self.dmax = self.dij_sort[len(self.dij_sort) - 1] #两点最大距离
@@ -71,9 +72,16 @@ class myCluster:
 # =============================================================================
         self.gen_cluster()
 
+# =============================================================================
+#         画图
+# =============================================================================
         self.draw()
         
-        
+# =============================================================================
+#         生成csv结果文件
+# =============================================================================
+        self.gen_csv()
+                
 # =============================================================================
 #     total_run(self, times)
 #     一键调参并执行
@@ -91,6 +99,7 @@ class myCluster:
         self.gen_center()
         self.gen_cluster()
         self.draw()
+        self.gen_csv()
         
 # =============================================================================
 #         gen_cluster(self)
@@ -103,23 +112,6 @@ class myCluster:
             if self.typeno[self.dense_sort_index[i]] == -1:
                 self.typeno[self.dense_sort_index[i]] = self.typeno[self.minindex[self.dense_sort_index[i]]]      
         print(self.typeno)       
-# =============================================================================
-#         self.typeno = [-1 for i in range(0, self.xy.shape[0])]
-#         for i in self.dense_sort_index:
-#             clusterno = -1
-#             clusterdist = self.dmax
-#                     
-#             for j in self.centerindex:
-#                 if clusterdist > self.dij[i][j]:
-#                     clusterdist = self.dij[i][j]
-#                     clusterno = j
-# 
-#             if not clusterno == -1: 
-#                 self.typeno[i] = clusterno       
-# =============================================================================
-        
-        
-        
         
 # =============================================================================
 #     gen_center(self)
@@ -188,9 +180,7 @@ class myCluster:
         for i in range(0, self.xy.shape[0]):
             plt.plot(self.xy[i][0], self.xy[i][1], 'o', color=colors[centerindex.index(typeno[i])])
         plt.show()
-        
-        
-        
+               
         colors = ['#FFB6C1', '#800080', '#0000FF', '#DBDB70', '#8FBC8F', '#FF7F00', '#2F4F4F']
         plt.title('x-y points cluster graph; dc=' + str(self.dc))
         plt.xlabel('x')
@@ -207,26 +197,30 @@ class myCluster:
         plt.plot(self.dense_dense,self.segema,'o')
         plt.show()
         
-# =============================================================================
-#         plt.title('ρ-б graph')
-#         plt.xlabel('ρ')
-#         plt.ylabel('б')
-#         plt.plot([self.dense_dense[i] for i in self.centerindex],[self.segema[i] for i in self.centerindex],'o')
-#         plt.show()
-# =============================================================================
         
-        plt.title('γ graph')
-        plt.xlabel('No.')
-        plt.ylabel('γ')
-        plt.plot(self.gama,'o')
-        plt.show()   
+# =============================================================================
+#         plt.title('γ graph')
+#         plt.xlabel('No.')
+#         plt.ylabel('γ')
+#         plt.plot(self.gama,'o')
+#         plt.show()   
+# =============================================================================
         
         plt.title('γ-sort graph')
         plt.xlabel('No.')
         plt.ylabel('γ')
         plt.plot(self.gama_sort,'o')
         plt.show()   
-        
+    
+# =============================================================================
+#     def gen_csv(self):
+#     生成csv结果文件
+# =============================================================================
+    def gen_csv(self):
+        with open('result.csv', 'w', newline='') as csvout:
+            writer = csv.writer(csvout)
+            for i in range(0, self.xy.shape[0]):
+                writer.writerow([self.xy[i][0], self.xy[i][1], self.centerindex.index(self.typeno[i])])
         
         
 # =============================================================================
@@ -288,9 +282,16 @@ class myCluster:
     def cut_off_kernel(self, distance, dc):
         return 1 if (distance - dc) < 0 else 0
         
+# =============================================================================
+#     gen_rou(self)
+#     生成密度列表
+#     计算每个点截断距离内的密度值
+#     有两种方式 cut-off与gaussian
+#     cut-off是截断距离内点的个数 离散函数
+#     gaussian是截断距离内密度的估量 连续函数
+# =============================================================================
     def gen_rou(self):
         self.dense = []
-        #print(len(self.dij[0])) #i=0 j - > n
 
         for i in range(0, self.dij.shape[0]):
             kernel = [self.cut_off_kernel(x, self.dc) for x in self.dij[i]]
